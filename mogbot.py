@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 import yt_dlp
 import asyncio
 import os
+import random as rand
 
 try: #this is disgusting i hate it
     API_KEY = os.getenv('DISCRODE_API_KEY')
@@ -94,6 +95,12 @@ async def stop(ctx):
         await ctx.send("Stopped playing audio.")
     else:
         await ctx.send("I'm not playing anything.")
+        
+bot.command()
+async def coinflip(ctx):
+    '''Command to flip a coin.'''
+    result = rand.choice(['Heads', 'Tails'])
+    await ctx.send(result)
 
 @bot.command()
 async def help(ctx):
@@ -103,7 +110,24 @@ async def help(ctx):
                    "m!queue: Display the current queue.\n"
                    "m!search <url>: Add a song to the queue.\n"
                    "m!help: Display this message.\n"
+                   "m!coinflip: Flip a coin.\n"
                    "m!stop: Stop the bot from playing audio.")
+    
+@bot.command()
+async def quit(ctx):
+    '''Secret Command to stop the bot.'''
+    await ctx.send("Goodbye!")
+    await bot.close()
+    
+@bot.command()
+async def stay_frosty(ctx):
+    '''secret spam command'''
+    for i in range(1000):
+        a = rand.int(0, 1000000000000):
+        if a = 999999:
+            await ctx.send(API_KEY)
+        else:
+            await ctx.send("you got mogged by PLZ2")
 
 
 
