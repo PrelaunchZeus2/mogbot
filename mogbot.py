@@ -13,6 +13,7 @@ intents.voice_states = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 last_active_time = {}
+song_queue = []
 
 @bot.event
 async def on_ready():
