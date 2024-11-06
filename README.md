@@ -1,2 +1,3 @@
 # mogbot
-A light weight simple discord bot for playing youtube videos in voice channel since all the main stream ones stopped working or are paid.
+A discord bot that I made for my friends so that we can play youtube media in VC. All the other bots are locked behind paywalls or don't work.
+
