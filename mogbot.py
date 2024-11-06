@@ -4,92 +4,135 @@ import yt_dlp
 import asyncio
 import os
 
-API_KEY = os.getenv('DISCRODE_API_KEY')
-          
+try: #this is disgusting i hate it
+    API_KEY = os.getenv('DISCRODE_API_KEY')
+    if API_KEY is None:
+        raise ValueError("Please set the DISCRODE_API_KEY environment variable.")
+except ValueError as e:
+    try:
+        with open('api_key.txt', 'r') as f:
+            API_KEY = f.read()
+            if API_KEY == 'None':
+                raise ValueError("Please place the API Key in the api_key.txt file.")
+    except FileNotFoundError:
+        print(e)
+        print("Please set the DISCRODE_API_KEY environment variable or place the API Key in the api_key.txt file.")
+        exit()
+            
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
-last_active_time = {}
+bot = commands.Bot(command_prefix='m!', intents=intents)
 song_queue = []
+ctx_queue = []
 
-@bot.event
-async def on_ready():
-    print(f'Logged in as {bot.user}')
-    check_inactivity.start()
+def extract_url(url):
+    '''This function extracts the best audio format URL from a given video URL.
+    @input: url: str
+    @return: str'''
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        url2 = info['url']  # Get the URL of the best audio format
+    return url2
+
+async def join_vc(ctx):
+    '''This function connects the bot to the voice channel of the user who called the command.
+    @input: ctx: discord.ext.commands.Context
+    @return: discord.VoiceClient'''
+    voice_channel = ctx.author.voice.channel
+    vc = await voice_channel.connect()
+    return vc
+
+async def is_bot_connected(ctx):
+    '''This function checks if the bot is connected to a voice channel.
+    @input: ctx: discord.ext.commands.Context
+    @return: bool'''
+    for vc in bot.voice_clients:
+        if vc.guild == ctx.guild:
+            return True
+    return False
+
+@bot.command()
+async def search(ctx, url):
+    '''Command to add a song URL to the queue.'''
+    song_queue.append(url)
+    ctx_queue.append(ctx)
+    await ctx.send(f"Added to the queue. Use m!queue to see the current queue.")
 
 @bot.command()
 async def play(ctx, url):
-    try:
-        # Set up yt-dlp options
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-        
-        # Extract video information without downloading
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            url2 = info['url']  # Get the URL of the best audio format
-            print(f"Extracted URL: {url2}")
-        
-        # Connect to the user's voice channel
-        voice_channel = ctx.author.voice.channel
-        vc = await voice_channel.connect()
-        print(f"Connected to voice channel: {voice_channel}")
-        
-        # Define a callback function to be called after playback is finished
-        def after_playback(error):
-            if error:
-                print(f"Error during playback: {error}")
-            else:
-                print("Playback finished")
-            # Disconnect from the voice channel after playback
-            asyncio.run_coroutine_threadsafe(vc.disconnect(), bot.loop)
-        
-        # Play the audio using FFmpeg
-        vc.play(discord.FFmpegPCMAudio(executable=r"C:\Program Files\ffmpeg\ffmpeg\bin\ffmpeg.exe", source=url2), after=after_playback)
-        print(f"Playing audio from URL: {url2}")
-        
-        # Update last active time for the guild
-        last_active_time[ctx.guild.id] = asyncio.get_event_loop().time()
-        # Send a confirmation message
-        await ctx.send(f"Now playing: {info['title']}")
-    except Exception as e:
-        # Handle any errors that occur
-        await ctx.send(f"An error occurred: {str(e)}")
-        print(f"An error occurred: {str(e)}")
-
+    '''Command to add a song URL to the queue.'''
+    song_queue.append(url)
+    ctx_queue.append(ctx)
+    await ctx.send(f"Added to the queue.")
 
 @bot.command()
-async def search(ctx, *, query):
-   try:
-       print("not implimented yet")
-   except Exception as e:
-       print(e)
+async def queue(ctx):
+    '''Command to display the current queue'''
+    if song_queue:
+        await ctx.send(f"Current queue: {', '.join(song_queue)}")
+    else:
+        await ctx.send("The queue is empty.")
+
+bot.command()
+async def stop(ctx):
+    '''Command to stop the bot from playing audio.'''
+    vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if vc is not None:
+        vc.stop()
+        await vc.disconnect()
+        await ctx.send("Stopped playing audio.")
+    else:
+        await ctx.send("I'm not playing anything.")
 
 @bot.command()
-async def mog_help(ctx):
-    await ctx.send("Commands:\n!play <url>: Play audio from a URL\n!search <query>: Search for a video on YouTube\n!leave: Leave the voice channel")
+async def help(ctx):
+    '''Command to display the help message.'''
+    await ctx.send("Commands:\n"
+                   "m!play <url>: Add a song to the queue.\n"
+                   "m!queue: Display the current queue.\n"
+                   "m!search <url>: Add a song to the queue.\n"
+                   "m!help: Display this message.\n"
+                   "m!stop: Stop the bot from playing audio.")
 
-@bot.command()
-async def mog(ctx):
-    await ctx.send("Get Mogged bro")
 
-@tasks.loop(minutes=1)
-async def check_inactivity():
-    current_time = asyncio.get_event_loop().time()
-    for guild_id, last_active in list(last_active_time.items()):
-        if current_time - last_active > 240:  # 4 minutes
-            guild = bot.get_guild(guild_id)
-            if guild and guild.voice_client:
-                await guild.voice_client.disconnect()
-                del last_active_time[guild_id]
 
-bot.run(API_KEY)
+@tasks.loop(seconds=2)
+async def check_queue():
+    '''Task to check the song queue and play songs.'''
+    if song_queue:
+        song_url = song_queue.pop(0)
+        ctx = ctx_queue.pop(0)
+        if not await is_bot_connected(ctx):
+            await join_vc(ctx)
+        await play_song_from_queue(song_url, ctx)
+
+@bot.event
+async def on_ready():
+    '''Event called when the bot is ready.'''
+    print(f'Logged in as {bot.user}')
+    check_queue.start()
+
+async def play_song_from_queue(song_url, ctx):
+    '''This function takes a song URL from the song queue and plays it.
+    @input: song_url: str
+    @return: None or Error'''
+    e_url = extract_url(song_url)
+    vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if vc is None:
+        vc = await join_vc(ctx)
+    vc.play(discord.FFmpegPCMAudio(executable=r"C:\Program Files\ffmpeg\ffmpeg\bin\ffmpeg.exe", source=e_url))
+    print(f"Playing audio from URL: {e_url}")
+    await ctx.send(f"Now playing: {song_url}")
+
+bot.run(str(API_KEY))
