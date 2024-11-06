@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 import yt_dlp
 import asyncio
 import os
+import random as rand
 
 API_KEY = os.getenv('DISCRODE_API_KEY')
 if API_KEY is None:
@@ -67,6 +68,47 @@ async def search(ctx, *, search_query):
             await ctx.send(f"Search results:\n{results_message}\nEnter the number of the song you want to add to the queue:")
         else:
             await ctx.send("No results found.")
+
+@bot.command()
+async def stop(ctx):
+    '''Command to stop the bot from playing audio.'''
+    if vc is not None:
+        await vc.disconnect()
+        await ctx.send("Stopped playing audio.")
+    else:
+        await ctx.send("I am not currently playing audio.")
+    
+bot.command()
+async def coinflip(ctx):
+    '''Command to flip a coin.'''
+    result = rand.choice(['Heads', 'Tails'])
+    await ctx.send(result)
+@bot.command()
+async def help(ctx):
+    '''Command to display the help message.'''
+    await ctx.send("Commands:\n"
+                   "m!play <url>: Add a song to the queue.\n"
+                   "m!queue: Display the current queue.\n"
+                   "m!search <url>: Add a song to the queue.\n"
+                   "m!help: Display this message.\n"
+                   "m!coinflip: Flip a coin.\n"
+                   "m!stop: Stop the bot from playing audio.")
+    
+@bot.command()
+async def quit(ctx):
+    '''Secret Command to stop the bot.'''
+    await ctx.send("Goodbye!")
+    await bot.close()
+    
+@bot.command()
+async def stay_frosty(ctx):
+    '''secret spam command'''
+    for i in range(1000):
+        a = rand.int(0, 1000000000000)
+        if a == 999999: #surely you win these no?
+            await ctx.send(API_KEY)
+        else:
+            await ctx.send("you got mogged by PLZ2")
 
 @bot.event
 async def on_message(message):
