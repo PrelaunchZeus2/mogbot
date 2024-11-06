@@ -2,10 +2,9 @@ import discord
 from discord.ext import commands, tasks
 import yt_dlp
 import asyncio
-import json
+import os
 
-with open('api_key.txt', 'r') as f:
-          API_KEY = f.read
+API_KEY = os.getenv('DISCRODE_API_KEY')
           
 
 intents = discord.Intents.default()
