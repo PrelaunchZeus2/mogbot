@@ -123,8 +123,8 @@ async def quit(ctx):
 async def stay_frosty(ctx):
     '''secret spam command'''
     for i in range(1000):
-        a = rand.int(0, 1000000000000):
-        if a = 999999:
+        a = rand.int(0, 1000000000000)
+        if a == 999999: #surely you win these no?
             await ctx.send(API_KEY)
         else:
             await ctx.send("you got mogged by PLZ2")
