@@ -4,7 +4,21 @@ import yt_dlp
 import asyncio
 import os
 
-API_KEY = os.getenv('DISCRODE_API_KEY')
+try: #this is disgusting i hate it
+    API_KEY = os.getenv('DISCRODE_API_KEY')
+    if API_KEY is None:
+        raise ValueError("Please set the DISCRODE_API_KEY environment variable.")
+except ValueError as e:
+    try:
+        with open('api_key.txt', 'r') as f:
+            API_KEY = f.read()
+            if API_KEY == 'None':
+                raise ValueError("Please place the API Key in the api_key.txt file.")
+    except FileNotFoundError:
+        print(e)
+        print("Please set the DISCRODE_API_KEY environment variable or place the API Key in the api_key.txt file.")
+        exit()
+            
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -98,4 +112,4 @@ async def play_song_from_queue(song_url, ctx):
     print(f"Playing audio from URL: {e_url}")
     await ctx.send(f"Now playing: {song_url}")
 
-bot.run(API_KEY)
+bot.run(str(API_KEY))
